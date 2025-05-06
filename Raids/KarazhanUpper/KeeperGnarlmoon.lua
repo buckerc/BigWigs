@@ -66,6 +66,8 @@ L:RegisterTranslations("enUS", function()
 		trigger_blueMoon = "afflicted by Blue Moon",
 		msg_redMoon = "You have RED MOON!",
 		msg_blueMoon = "You have BLUE MOON!",
+
+		trigger_engage = "The Moon, it calls...",
 	}
 end)
 
@@ -96,11 +98,13 @@ local syncName = {
 	lunarShift = "GnarlmoonLunarShift" .. module.revision,
 	owlPhaseStart = "GnarlmoonOwlStart" .. module.revision,
 	owlPhaseEnd = "GnarlmoonOwlEnd" .. module.revision,
+	bossStart = "GnarlmoonEngage" .. module.revision,
+	bossEnd = "GnarlmoonStop" .. module.revision,
 }
 
 -- module functions
 function module:OnEnable()
-	self:RegisterEvent("CHAT_MSG_YELL")
+	self:RegisterEvent("CHAT_MSG_MONSTER_YELL")
 	self:RegisterEvent("CHAT_MSG_SPELL_CREATURE_VS_CREATURE_DAMAGE")
 	self:RegisterEvent("CHAT_MSG_SPELL_PERIODIC_CREATURE_BUFFS")
 	self:RegisterEvent("CHAT_MSG_SPELL_AURA_GONE_OTHER")
@@ -150,7 +154,6 @@ function module:OnEngage()
 	if self.db.profile.owlphase then
 		self:ScheduleRepeatingEvent("CheckHps", self.CheckHps, 1, self)
 	end
-
 end
 
 function module:OnDisengage()
@@ -167,6 +170,11 @@ function module:OnDisengage()
 	end
 end
 
+function module:CHAT_MSG_MONSTER_YELL(msg)
+	if string.find(msg, L["trigger_engage"]) then
+		self:Sync(syncName.bossStart)
+	end
+end
 function module:CHAT_MSG_SPELL_CREATURE_VS_CREATURE_DAMAGE(msg)
 	if string.find(msg, L["trigger_lunarShiftCast"]) then
 		self:Sync(syncName.lunarShift)
@@ -188,9 +196,11 @@ end
 function module:CHAT_MSG_SPELL_PERIODIC_SELF_DAMAGE(msg)
 	if self.db.profile.moondebuff then
 		if string.find(msg, L["trigger_redMoon"]) then
+			self:Sound("Red")
 			self:Message(L["msg_redMoon"], "Important", true, "Alarm")
 			self:WarningSign(icon.redMoon, 5, true, "RED")
 		elseif string.find(msg, L["trigger_blueMoon"]) then
+			self:Sound("Blue")
 			self:Message(L["msg_blueMoon"], "Important", true, "Alert")
 			self:WarningSign(icon.blueMoon, 5, "BLUE")
 		end
@@ -204,6 +214,10 @@ function module:BigWigs_RecvSync(sync, rest, nick)
 		self:OwlPhaseStart()
 	elseif sync == syncName.owlPhaseEnd then
 		self:OwlPhaseEnd()
+	elseif sync == syncName.bossStart then
+		self:OnEngage()
+	elseif sync == syncName.bossEnd then
+		self:OnDisengage()
 	end
 end
 
