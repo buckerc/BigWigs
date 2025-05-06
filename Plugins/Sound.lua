@@ -74,6 +74,9 @@ local sounds = {
 	stopcasting = "Interface\\AddOns\\BigWigs\\Sounds\\stopcasting.mp3",
 	IgniteDanger = "Interface\\AddOns\\BigWigs\\Sounds\\IgniteDanger.mp3",
 	Pyro = "Interface\\AddOns\\BigWigs\\Sounds\\Pyro.mp3",
+
+	Red =  "Interface\\AddOns\\BigWigs\\Sounds\\Red.mp3",
+	Blue =  "Interface\\AddOns\\BigWigs\\Sounds\\Blue.wav",
 }
 
 
