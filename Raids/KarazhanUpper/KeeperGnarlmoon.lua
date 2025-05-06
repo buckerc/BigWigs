@@ -168,13 +168,16 @@ function module:OnDisengage()
 	if self:IsEventScheduled("RemainingRavens") then
 		self:CancelScheduledEvent("RemainingRavens")
 	end
+
+	if self:IsEventScheduled("LunarShiftForOwls") then
+		self:CancelScheduledEvent("LunarShiftForOwls")
+	end
 end
 
 function module:CHAT_MSG_MONSTER_YELL(msg)
-	if string.find(msg, L["trigger_engage"]) then
-		self:Sync(syncName.bossStart)
-	end
+	self:Sync(msg)
 end
+
 function module:CHAT_MSG_SPELL_CREATURE_VS_CREATURE_DAMAGE(msg)
 	if string.find(msg, L["trigger_lunarShiftCast"]) then
 		self:Sync(syncName.lunarShift)
@@ -222,11 +225,15 @@ function module:BigWigs_RecvSync(sync, rest, nick)
 end
 
 function module:LunarShift()
+	if self:IsEventScheduled("LunarShiftForOwls") then
+		self:CancelScheduledEvent("LunarShiftForOwls")
+	end
 	if self.db.profile.lunarshift then
 		self:Message(L["msg_lunarShift"], "Important")
 		self:RemoveBar(L["bar_lunarShiftCD"])
 		self:Bar(L["bar_lunarShiftCast"], timer.lunarShiftCast, icon.lunarShift, true, color.lunarShift)
 		self:DelayedBar(timer.lunarShiftCast, L["bar_lunarShiftCD"], timer.lunarShiftCD - timer.lunarShiftCast, icon.lunarShift, true, color.lunarShift)
+		self:ScheduleRepeatingEvent("LunarShiftForOwls", self.LunarShift, timer.lunarShiftCD + 0.2, self)
 	end
 end
 
@@ -254,8 +261,8 @@ function module:OwlPhaseStart()
 		end
 
 		-- Cancel Lunar Shift bars during owl phase
-		self:RemoveBar(L["bar_lunarShiftCast"])
-		self:RemoveBar(L["bar_lunarShiftCD"])
+		-- self:RemoveBar(L["bar_lunarShiftCast"])
+		-- self:RemoveBar(L["bar_lunarShiftCD"])
 	end
 end
 
