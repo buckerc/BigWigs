@@ -494,80 +494,89 @@ function module:Test()
 				SetRaidTarget("player", 0)
 			end
 		end },
-		{ time = 15, func = function()
-			print("Test: Stormhide gains Guided Ley-Beam")
-			module:CHAT_MSG_SPELL_PERIODIC_FRIENDLYPLAYER_BUFFS("Stormhide gains Guided Ley-Beam (1).")
-		end },
 
-		{ time = 20, func = function()
+		{ time = 15, func = function()
 			print("Test: You gain Guided Ley-Beam")
 			module:CHAT_MSG_SPELL_PERIODIC_FRIENDLYPLAYER_BUFFS("You gain Guided Ley-Beam (1).")
 		end },
 
 		-- Summon Whelps
-		{ time = 25, func = function()
+		{ time = 20, func = function()
 			print("Test: Ley-Watcher Incantagos begins to cast Summon Manascale Whelps")
 			module:BeginsCastEvent("Ley-Watcher Incantagos begins to cast Summon Manascale Whelps.")
 		end },
 
 		-- Affinities
-		{ time = 26, func = function()
-			print("Test: You gain Green Affinity")
-			module:BuffEvent("You gain Green Affinity (1).")
-			SendChatMessage("You gain Green Affinity (1).", "RAID")
+		{ time = 25, func = function()
+			print("Test: Player1 gains Green Affinity")
+			module:BuffEvent("Player1 gains Green Affinity (1).")
 		end },
 		{ time = 27, func = function()
-			print("Test: Multihealer gains Green Affinity")
-			module:BuffEvent("Multihealer gains Green Affinity (1).")
-			SendChatMessage("Multihealer gains Green Affinity (1).", "RAID")
+			print("Test: You gain Green Affinity")
+			module:BuffEvent("You gain Green Affinity (1).")
 		end },
-		{ time = 27.5, func = function()
-			print("Test: Pumpy gains Green Affinity")
-			module:BuffEvent("Pumpy gains Green Affinity (1).")
-			SendChatMessage("Pumpy gains Green Affinity (1).", "RAID")
-		end },
-		{ time = 29, func = function()
+		{ time = 30, func = function()
 			print("Test: Green Affinity dies.")
 			module:BuffEvent("Green Affinity dies.")
 			SendChatMessage("Green Affinity dies.", "RAID")
 		end },
-		{ time = 38, func = function()
+		{ time = 35, func = function()
 			print("Test: Player1 gains Black Affinity")
 			module:BuffEvent("Player1 gains Black Affinity (1).")
 		end },
-		{ time = 43, func = function()
+		{ time = 37, func = function()
+			print("Test: You gain Black Affinity")
+			module:BuffEvent("You gain Black Affinity (1).")
+		end },
+		{ time = 40, func = function()
 			print("Test: Black Affinity dies.")
 			module:BuffEvent("Black Affinity dies.")
 		end },
-		{ time = 48, func = function()
+		{ time = 45, func = function()
 			print("Test: Player1 gains Red Affinity")
 			module:BuffEvent("Player1 gains Red Affinity (1).")
 		end },
-		{ time = 53, func = function()
+		{ time = 47, func = function()
+			print("Test: You gain Red Affinity")
+			module:BuffEvent("You gain Red Affinity (1).")
+		end },
+		{ time = 50, func = function()
 			print("Test: Red Affinity dies.")
 			module:BuffEvent("Red Affinity dies.")
 		end },
-		{ time = 58, func = function()
+		{ time = 55, func = function()
 			print("Test: Player1 gains Blue Affinity")
 			module:BuffEvent("Player1 gains Blue Affinity (1).")
 		end },
-		{ time = 63, func = function()
+		{ time = 57, func = function()
+			print("Test: You gain Blue Affinity")
+			module:BuffEvent("You gain Blue Affinity (1).")
+		end },
+		{ time = 60, func = function()
 			print("Test: Blue Affinity dies.")
 			module:BuffEvent("Blue Affinity dies.")
 		end },
-		{ time = 68, func = function()
+		{ time = 65, func = function()
 			print("Test: Player1 gains Mana Affinity")
 			module:BuffEvent("Player1 gains Mana Affinity (1).")
 		end },
-		{ time = 73, func = function()
+		{ time = 67, func = function()
+			print("Test: You gain Mana Affinity")
+			module:BuffEvent("You gain Mana Affinity (1).")
+		end },
+		{ time = 70, func = function()
 			print("Test: Mana Affinity dies.")
 			module:BuffEvent("Mana Affinity dies.")
 		end },
-		{ time = 78, func = function()
+		{ time = 75, func = function()
 			print("Test: Player1 gains Crystal Affinity")
 			module:BuffEvent("Player1 gains Crystal Affinity (1).")
 		end },
-		{ time = 83, func = function()
+		{ time = 77, func = function()
+			print("Test: You gain Crystal Affinity")
+			module:BuffEvent("You gain Crystal Affinity (1).")
+		end },
+		{ time = 80, func = function()
 			print("Test: Crystal Affinity dies.")
 			module:BuffEvent("Crystal Affinity dies.")
 		end },
