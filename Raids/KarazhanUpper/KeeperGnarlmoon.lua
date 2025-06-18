@@ -84,8 +84,6 @@ L:RegisterTranslations("enUS", function()
 
 		trigger_bloodBoil = "Keeper Gnarlmoon's Blood Boil hits",
 		bar_bloodBoil = "Next Blood Boil",
-
-		bar_ravensSoon = "Ravens",
 	}
 end)
 
@@ -195,7 +193,6 @@ function module:OnEngage()
 
 	if self.db.profile.ravens then
 		self:DelayedMessage(timer.ravenSummon[1] - 5, L["msg_ravensSoon"], "Important", false, nil, false)
-		self:Bar(L["bar_ravensSoon"], timer.ravenSummon[1], icon.owlPhase, true, color.owlPhase)
 		self:ScheduleEvent("FirstRavens", self.FirstRavens, timer.ravenSummon[1], self)
 	end
 
@@ -244,11 +241,9 @@ function module:CHAT_MSG_SPELL_PERIODIC_SELF_DAMAGE(msg)
 		if string.find(msg, L["trigger_redMoon"]) then
 			self:Message(L["msg_redMoon"], "Important", true, "Alarm")
 			self:WarningSign(icon.redMoon, 5, true, "RED")
-			self:Sound("Red")
 		elseif string.find(msg, L["trigger_blueMoon"]) then
 			self:Message(L["msg_blueMoon"], "Important", true, "Alert")
 			self:WarningSign(icon.blueMoon, 5, "BLUE")
-			self:Sound("Blue")
 		end
 	end
 end
@@ -290,13 +285,11 @@ end
 function module:FirstRavens()
 	-- first summon is after 15 seconds, remainder are every 40 seconds
 	self:DelayedMessage(timer.ravenSummon[2] - 5, L["msg_ravensSoon"], "Important", false, nil, false)
-	self:Bar(L["bar_ravensSoon"], timer.ravenSummon[2], icon.owlPhase, true, color.owlPhase)
 	self:ScheduleRepeatingEvent("RemainingRavens", self.RemainingRavens, timer.ravenSummon[2], self)
 end
 
 function module:RemainingRavens()
 	self:DelayedMessage(timer.ravenSummon[2] - 5, L["msg_ravensSoon"], "Important", false, nil, false)
-	self:Bar(L["bar_ravensSoon"], timer.ravenSummon[2], icon.owlPhase, true, color.owlPhase)
 end
 
 function module:OwlPhaseStart()

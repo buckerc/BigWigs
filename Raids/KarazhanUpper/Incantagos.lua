@@ -66,12 +66,21 @@ L:RegisterTranslations("enUS", function()
 		bar_leyLineCD = "Next Possible Ley-Line Disturbance",
 		msg_leyLine = "Ley-Line Disturbance casting!",
 
-		trigger_greenAffinity = "gains Green Affinity",
-		trigger_blackAffinity = "gains Black Affinity",
-		trigger_redAffinity = "gains Red Affinity",
-		trigger_blueAffinity = "gains Blue Affinity",
-		trigger_manaAffinity = "gains Mana Affinity",
-		trigger_crystalAffinity = "gains Crystal Affinity",
+		trigger_greenAffinityYou = "You gain Green Affinity",
+		trigger_blackAffinityYou = "You gain Black Affinity",
+		trigger_redAffinityYou = "You gain Red Affinity",
+		trigger_blueAffinityYou = "You gain Blue Affinity",
+		trigger_manaAffinityYou = "You gain Mana Affinity",
+		trigger_crystalAffinityYou = "You gain Crystal Affinity",
+
+		trigger_greenAffinityOther = "(.+) gains Green Affinity",
+		trigger_blackAffinityOther = "(.+) gains Black Affinity",
+		trigger_redAffinityOther = "(.+) gains Red Affinity",
+		trigger_blueAffinityOther = "(.+) gains Blue Affinity",
+		trigger_manaAffinityOther = "(.+) gains Mana Affinity",
+		trigger_crystalAffinityOther = "(.+) gains Crystal Affinity",
+
+		trigger_affinityDies = "(.+) Affinity dies",
 
 		msg_greenAffinity = "GREEN AFFINITY - Shamans and Druids handle this!",
 		msg_blackAffinity = "BLACK AFFINITY - Priests and Warlocks handle this!",
@@ -80,6 +89,7 @@ L:RegisterTranslations("enUS", function()
 		msg_manaAffinity = "MANA AFFINITY - Mages and Druids handle this!",
 		msg_crystalAffinity = "CRYSTAL AFFINITY - Warriors, Rogues, Paladins and Hunters handle this!",
 
+		bar_affinityKill = "Kill the Affinity",
 		bar_greenAffinity = "Green Affinity (Shamans/Druids)",
 		bar_blackAffinity = "Black Affinity (Priests/Warlocks)",
 		bar_redAffinity = "Red Affinity (Mages/Warlocks)",
@@ -94,7 +104,7 @@ L:RegisterTranslations("enUS", function()
 		msg_leyBeamYou = "LEY-BEAM on YOU - GET AWAY FROM OTHERS!",
 		msg_leyBeamSay = "Guided Ley-Beam on me! STAY AWAY!",
 
-		msg_curseWarning = "38% - CURSE OF MANASCALE coming at 33%!",
+		msg_curseWarning = "45% - CURSE OF MANASCALE coming at 40%!",
 
 		warningSign_beam = "IN BEAM, MOVE",
 	}
@@ -139,8 +149,14 @@ local syncName = {
 	blueAffinity = "IncantagosBlueAffinity" .. module.revision,
 	manaAffinity = "IncantagosManaAffinity" .. module.revision,
 	crystalAffinity = "IncantagosCrystalAffinity" .. module.revision,
+	affinity = "IncantagosAffinity" .. module.revision,
+	affinityDies = "IncantagosAffinityDies" .. module.revision,
 	beam = "IncantagosLeyBeam" .. module.revision,
 }
+
+affinityUpdateInterval = 0.2; -- How often the OnUpdate code will run (in seconds)
+timeLastUpdate = GetTime()
+monitoringAffinity = false
 
 -- Proximity Plugin
 module.proximityCheck = function(unit)
@@ -160,19 +176,22 @@ function module:OnEnable()
 
 	self:RegisterEvent("CHAT_MSG_SPELL_PERIODIC_SELF_DAMAGE")
 
+	self:RegisterEvent("CHAT_MSG_COMBAT_HOSTILE_DEATH", "BuffEvent") --Affinity dies
+
 	if SUPERWOW_VERSION then
 		self:RegisterCastEventsForUnitName("Ley-Watcher Incantagos", "IncantagosCastEvent")
-	end
+	end	
 
 	self:ThrottleSync(5, syncName.summonSeeker)
 	self:ThrottleSync(5, syncName.summonWhelps)
 	self:ThrottleSync(5, syncName.leyLine)
-	self:ThrottleSync(20, syncName.greenAffinity)
-	self:ThrottleSync(20, syncName.blackAffinity)
-	self:ThrottleSync(20, syncName.redAffinity)
-	self:ThrottleSync(20, syncName.blueAffinity)
-	self:ThrottleSync(20, syncName.manaAffinity)
-	self:ThrottleSync(20, syncName.crystalAffinity)
+	self:ThrottleSync(20, syncName.affinity)
+	--self:ThrottleSync(20, syncName.greenAffinity)
+	--self:ThrottleSync(20, syncName.blackAffinity)
+	--self:ThrottleSync(20, syncName.redAffinity)
+	--self:ThrottleSync(20, syncName.blueAffinity)
+	--self:ThrottleSync(20, syncName.manaAffinity)
+	--self:ThrottleSync(20, syncName.crystalAffinity)
 	self:ThrottleSync(2, syncName.beam)
 end
 
@@ -180,6 +199,7 @@ function module:OnSetup()
 	self.started = nil
 	self.curseWarned = nil
 	self.bossHealth = 100
+	monitoringAffinity = false
 end
 
 function module:OnEngage()
@@ -198,10 +218,13 @@ function module:OnEngage()
 	self.curseWarned = nil
 	self.bossHealth = 100
 
+	BigWigsAffinity:AShow()
+
 	-- Start health monitoring
 	if self.db.profile.cursewarning then
 		self:ScheduleRepeatingEvent("CheckBossHealth", self.CheckBossHealth, 1, self)
 	end
+	monitoringAffinity = false
 end
 
 function module:OnDisengage()
@@ -210,12 +233,14 @@ function module:OnDisengage()
 	if self:IsEventScheduled("CheckBossHealth") then
 		self:CancelScheduledEvent("CheckBossHealth")
 	end
+	BigWigsAffinity:AClose()
+	monitoringAffinity = false
 end
 
 function module:IncantagosCastEvent(casterGuid, targetGuid, eventType, spellId, castTime)
-	if eventType == "CHANNEL" and spellId == 51187 then
+	if eventType == "CHANNEL" and spellId == 51175 then
 		if IsRaidLeader() or IsRaidOfficer() then
-			SetRaidTarget(targetGuid, 8)
+			SetRaidTarget(targetGuid, 3)
 		end
 	end
 end
@@ -232,7 +257,7 @@ function module:CheckBossHealth()
 			if health > 0 and healthMax > 0 then
 				self.bossHealth = math.ceil((health / healthMax) * 100)
 
-				if self.bossHealth <= 38 and not self.curseWarned then
+				if self.bossHealth <= 45 and not self.curseWarned then
 					self:Message(L["msg_curseWarning"], "Important", nil, "Alarm")
 					self.curseWarned = true
 				end
@@ -253,18 +278,38 @@ function module:BeginsCastEvent(msg)
 end
 
 function module:BuffEvent(msg)
-	if string.find(msg, L["trigger_greenAffinity"]) then
-		self:Sync(syncName.greenAffinity)
-	elseif string.find(msg, L["trigger_blackAffinity"]) then
-		self:Sync(syncName.blackAffinity)
-	elseif string.find(msg, L["trigger_redAffinity"]) then
-		self:Sync(syncName.redAffinity)
-	elseif string.find(msg, L["trigger_blueAffinity"]) then
-		self:Sync(syncName.blueAffinity)
-	elseif string.find(msg, L["trigger_manaAffinity"]) then
-		self:Sync(syncName.manaAffinity)
-	elseif string.find(msg, L["trigger_crystalAffinity"]) then
-		self:Sync(syncName.crystalAffinity)
+	if string.find(msg, L["trigger_greenAffinityOther"]) then
+		local _,_,affinityPlayer,_ = string.find(msg, L["trigger_greenAffinityOther"])
+		self:Sync(syncName.greenAffinity .. " " .. affinityPlayer)
+	elseif string.find(msg, L["trigger_blackAffinityOther"]) then
+		local _,_,affinityPlayer,_ = string.find(msg, L["trigger_blackAffinityOther"])
+		self:Sync(syncName.blackAffinity .. " " .. affinityPlayer)
+	elseif string.find(msg, L["trigger_redAffinityOther"]) then
+		local _,_,affinityPlayer,_ = string.find(msg, L["trigger_redAffinityOther"])
+		self:Sync(syncName.redAffinity .. " " .. affinityPlayer)
+	elseif string.find(msg, L["trigger_blueAffinityOther"]) then
+		local _,_,affinityPlayer,_ = string.find(msg, L["trigger_blueAffinityOther"])
+		self:Sync(syncName.blueAffinity .. " " .. affinityPlayer)
+	elseif string.find(msg, L["trigger_manaAffinityOther"]) then
+		local _,_,affinityPlayer,_ = string.find(msg, L["trigger_manaAffinityOther"])
+		self:Sync(syncName.manaAffinity .. " " .. affinityPlayer)
+	elseif string.find(msg, L["trigger_crystalAffinityOther"]) then
+		local _,_,affinityPlayer,_ = string.find(msg, L["trigger_crystalAffinityOther"])
+		self:Sync(syncName.crystalAffinity .. " " .. affinityPlayer)
+	elseif string.find(msg, L["trigger_greenAffinityYou"]) then		
+		self:Sync(syncName.greenAffinity .. " " .. UnitName("Player"))
+	elseif string.find(msg, L["trigger_blackAffinityYou"]) then
+		self:Sync(syncName.blackAffinity .. " " .. UnitName("Player"))
+	elseif string.find(msg, L["trigger_redAffinityYou"]) then
+		self:Sync(syncName.redAffinity .. " " .. UnitName("Player"))
+	elseif string.find(msg, L["trigger_blueAffinityYou"]) then
+		self:Sync(syncName.blueAffinity .. " " .. UnitName("Player"))
+	elseif string.find(msg, L["trigger_manaAffinityYou"]) then
+		self:Sync(syncName.manaAffinity .. " " .. UnitName("Player"))
+	elseif string.find(msg, L["trigger_crystalAffinityYou"]) then
+		self:Sync(syncName.crystalAffinity .. " " .. UnitName("Player"))
+	elseif string.find(msg, L["trigger_affinityDies"]) then
+		self:Sync(syncName.affinityDies)
 	end
 end
 
@@ -289,20 +334,23 @@ function module:BigWigs_RecvSync(sync, rest, nick)
 		self:SummonWhelps()
 	elseif sync == syncName.leyLine then
 		self:LeyLine()
-	elseif sync == syncName.greenAffinity and self.db.profile.affinity then
-		self:GreenAffinity()
-	elseif sync == syncName.blackAffinity and self.db.profile.affinity then
-		self:BlackAffinity()
-	elseif sync == syncName.redAffinity and self.db.profile.affinity then
-		self:RedAffinity()
-	elseif sync == syncName.blueAffinity and self.db.profile.affinity then
-		self:BlueAffinity()
-	elseif sync == syncName.manaAffinity and self.db.profile.affinity then
-		self:ManaAffinity()
-	elseif sync == syncName.crystalAffinity and self.db.profile.affinity then
-		self:CrystalAffinity()
+	elseif sync == syncName.greenAffinity and rest and self.db.profile.affinity then
+		self:GreenAffinity(rest)
+	elseif sync == syncName.blackAffinity and rest and self.db.profile.affinity then
+		self:BlackAffinity(rest)
+	elseif sync == syncName.redAffinity and rest and self.db.profile.affinity then
+		self:RedAffinity(rest)
+	elseif sync == syncName.blueAffinity and rest and self.db.profile.affinity then
+		self:BlueAffinity(rest)
+	elseif sync == syncName.manaAffinity and rest and self.db.profile.affinity then
+		self:ManaAffinity(rest)
+	elseif sync == syncName.crystalAffinity and rest and self.db.profile.affinity then
+		self:CrystalAffinity(rest)
 	elseif sync == syncName.beam and self.db.profile.beam then
 		self:LeyBeamStarted(rest)
+	elseif sync == syncName.affinityDies then
+		monitoringAffinity = false
+		BigWigsAffinity:StopAffinityUpdate()
 	end
 end
 
@@ -323,44 +371,75 @@ function module:LeyLine()
 		self:Message(L["msg_leyLine"], "Important")
 		self:RemoveBar(L["bar_leyLineCD"])
 		self:Bar(L["bar_leyLineCast"], timer.leyLineCast, icon.leyLine, true, color.leyLine)
-		self:IntervalBar(L["bar_leyLineCD"], timer.leyLineCD[1], timer.leyLineCD[2], icon.leyLine, true, color.leyLine)
+		--self:IntervalBar(L["bar_leyLineCD"], timer.leyLineCD[1], timer.leyLineCD[2], icon.leyLine, true, color.leyLine)
+		self:DelayedBar(timer.leyLineCast, L["bar_affinityKill"], timer.affinity, color.leyLine)
 	end
 end
 
-function module:GreenAffinity()
-	self:Message(L["msg_greenAffinity"], "Important", true, "Alarm")
-	self:WarningSign(icon.greenAffinity, 5, true, "SHAMAN/DRUID")
-	self:Bar(L["bar_greenAffinity"], timer.affinity, icon.greenAffinity)
+function module:GreenAffinity(rest)
+	if not monitoringAffinity then
+		self:Message(L["msg_greenAffinity"], "Important", true, "Alarm")
+		self:WarningSign(icon.greenAffinity, 5, true, "SHAMAN/DRUID")
+		BigWigsAffinity:StartAffinityUpdate("green")
+		monitoringAffinity = true
+	end
+	BigWigsAffinity:RemoveAffinityTarget(rest)
+	--self:Bar(L["bar_greenAffinity"], timer.affinity, icon.greenAffinity)
 end
 
-function module:BlackAffinity()
-	self:Message(L["msg_blackAffinity"], "Important", true, "Alarm")
-	self:WarningSign(icon.blackAffinity, 5, true, "PRIEST/WARLOCK")
-	self:Bar(L["bar_blackAffinity"], timer.affinity, icon.blackAffinity)
+function module:BlackAffinity(rest)
+	if not monitoringAffinity then
+		self:Message(L["msg_blackAffinity"], "Important", true, "Alarm")
+		self:WarningSign(icon.blackAffinity, 5, true, "PRIEST/WARLOCK")
+		BigWigsAffinity:StartAffinityUpdate("black")
+		monitoringAffinity = true
+	end
+	BigWigsAffinity:RemoveAffinityTarget(rest)
+	--self:Bar(L["bar_blackAffinity"], timer.affinity, icon.blackAffinity)
 end
 
-function module:RedAffinity()
-	self:Message(L["msg_redAffinity"], "Important", true, "Alarm")
-	self:WarningSign(icon.redAffinity, 5, true, "MAGE/WARLOCK")
-	self:Bar(L["bar_redAffinity"], timer.affinity, icon.redAffinity)
+function module:RedAffinity(rest)
+	if not monitoringAffinity then
+		self:Message(L["msg_redAffinity"], "Important", true, "Alarm")
+		self:WarningSign(icon.redAffinity, 5, true, "MAGE/WARLOCK")
+		BigWigsAffinity:StartAffinityUpdate("red")
+		monitoringAffinity = true
+	end
+	BigWigsAffinity:RemoveAffinityTarget(rest)
+	--self:Bar(L["bar_redAffinity"], timer.affinity, icon.redAffinity)
 end
 
-function module:BlueAffinity()
-	self:Message(L["msg_blueAffinity"], "Important", true, "Alarm")
-	self:WarningSign(icon.blueAffinity, 5, true, "MAGE")
-	self:Bar(L["bar_blueAffinity"], timer.affinity, icon.blueAffinity)
+function module:BlueAffinity(rest)
+	if not monitoringAffinity then
+		self:Message(L["msg_blueAffinity"], "Important", true, "Alarm")
+		self:WarningSign(icon.blueAffinity, 5, true, "MAGE")
+		BigWigsAffinity:StartAffinityUpdate("blue")
+		monitoringAffinity = true
+	end
+	BigWigsAffinity:RemoveAffinityTarget(rest)
+	--self:Bar(L["bar_blueAffinity"], timer.affinity, icon.blueAffinity)
 end
 
-function module:ManaAffinity()
-	self:Message(L["msg_manaAffinity"], "Important", true, "Alarm")
-	self:WarningSign(icon.manaAffinity, 5, true, "MAGE/DRUID")
-	self:Bar(L["bar_manaAffinity"], timer.affinity, icon.manaAffinity)
+function module:ManaAffinity(rest)
+	if not monitoringAffinity then
+		self:Message(L["msg_manaAffinity"], "Important", true, "Alar")
+		self:WarningSign(icon.manaAffinity, 5, true, "MAGE/DRUID")
+		BigWigsAffinity:StartAffinityUpdate("mana")
+		monitoringAffinity = true
+	end
+	BigWigsAffinity:RemoveAffinityTarget(rest)
+	--self:Bar(L["bar_manaAffinity"], timer.affinity, icon.manaAffinity)
 end
 
-function module:CrystalAffinity()
-	self:Message(L["msg_crystalAffinity"], "Important", true, "Alarm")
-	self:WarningSign(icon.crystalAffinity, 5, true, "MELEE")
-	self:Bar(L["bar_crystalAffinity"], timer.affinity, icon.crystalAffinity)
+function module:CrystalAffinity(rest)
+	if not monitoringAffinity then
+		self:Message(L["msg_crystalAffinity"], "Important", true, "Alarm")
+		self:WarningSign(icon.crystalAffinity, 5, true, "MELEE")	
+		BigWigsAffinity:StartAffinityUpdate("crystal")
+		monitoringAffinity = true
+	end
+	BigWigsAffinity:RemoveAffinityTarget(rest)
+	--self:Bar(L["bar_crystalAffinity"], timer.affinity, icon.crystalAffinity)
 end
 
 function module:LeyBeamStarted(player)
@@ -396,7 +475,7 @@ function module:Test()
 			print("Test: simulate cast event")
 			if SUPERWOW_VERSION then
 				local _, guid = UnitExists("player")
-				module:IncantagosCastEvent(nil, guid, "CHANNEL", 51187, 0)
+				module:IncantagosCastEvent(nil, guid, "CHANNEL", 51175, 0)
 			end
 		end },
 
@@ -432,38 +511,74 @@ function module:Test()
 		end },
 
 		-- Affinities
-		{ time = 27, func = function()
-			print("Test: Player1 gains Green Affinity")
-			module:BuffEvent("Player1 gains Green Affinity (1).")
+		{ time = 26, func = function()
+			print("Test: You gain Green Affinity")
+			module:BuffEvent("You gain Green Affinity (1).")
+			SendChatMessage("You gain Green Affinity (1).", "RAID")
 		end },
-		{ time = 33, func = function()
+		{ time = 27, func = function()
+			print("Test: Multihealer gains Green Affinity")
+			module:BuffEvent("Multihealer gains Green Affinity (1).")
+			SendChatMessage("Multihealer gains Green Affinity (1).", "RAID")
+		end },
+		{ time = 27.5, func = function()
+			print("Test: Pumpy gains Green Affinity")
+			module:BuffEvent("Pumpy gains Green Affinity (1).")
+			SendChatMessage("Pumpy gains Green Affinity (1).", "RAID")
+		end },
+		{ time = 29, func = function()
+			print("Test: Green Affinity dies.")
+			module:BuffEvent("Green Affinity dies.")
+			SendChatMessage("Green Affinity dies.", "RAID")
+		end },
+		{ time = 38, func = function()
 			print("Test: Player1 gains Black Affinity")
 			module:BuffEvent("Player1 gains Black Affinity (1).")
 		end },
-		{ time = 39, func = function()
+		{ time = 43, func = function()
+			print("Test: Black Affinity dies.")
+			module:BuffEvent("Black Affinity dies.")
+		end },
+		{ time = 48, func = function()
 			print("Test: Player1 gains Red Affinity")
 			module:BuffEvent("Player1 gains Red Affinity (1).")
 		end },
-		{ time = 45, func = function()
+		{ time = 53, func = function()
+			print("Test: Red Affinity dies.")
+			module:BuffEvent("Red Affinity dies.")
+		end },
+		{ time = 58, func = function()
 			print("Test: Player1 gains Blue Affinity")
 			module:BuffEvent("Player1 gains Blue Affinity (1).")
 		end },
-		{ time = 51, func = function()
+		{ time = 63, func = function()
+			print("Test: Blue Affinity dies.")
+			module:BuffEvent("Blue Affinity dies.")
+		end },
+		{ time = 68, func = function()
 			print("Test: Player1 gains Mana Affinity")
 			module:BuffEvent("Player1 gains Mana Affinity (1).")
 		end },
-		{ time = 57, func = function()
+		{ time = 73, func = function()
+			print("Test: Mana Affinity dies.")
+			module:BuffEvent("Mana Affinity dies.")
+		end },
+		{ time = 78, func = function()
 			print("Test: Player1 gains Crystal Affinity")
 			module:BuffEvent("Player1 gains Crystal Affinity (1).")
 		end },
-
-		-- Second Ley-Line about 55s after first one
-		{ time = 65, func = function()
-			print("Test: Ley-Watcher Incantagos begins to cast Ley-Line Disturbance")
-			module:BeginsCastEvent("Ley-Watcher Incantagos begins to cast Ley-Line Disturbance.")
+		{ time = 83, func = function()
+			print("Test: Crystal Affinity dies.")
+			module:BuffEvent("Crystal Affinity dies.")
 		end },
 
-		{ time = 70, func = function()
+		-- Second Ley-Line about 55s after first one
+		--{ time = 65, func = function()
+		--	print("Test: Ley-Watcher Incantagos begins to cast Ley-Line Disturbance")
+		--	module:BeginsCastEvent("Ley-Watcher Incantagos begins to cast Ley-Line Disturbance.")
+		--end },
+
+		{ time = 85, func = function()
 			print("Test: Disengage")
 			module:Disengage()
 		end },
