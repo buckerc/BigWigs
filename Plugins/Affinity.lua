@@ -263,7 +263,6 @@ end
 
 function BigWigsAffinity:RemoveAffinityTarget(name)	
 	for i=1, getn(AffinityBuffs) do
-		
 		if AffinityBuffs[i] and UnitName(AffinityBuffs[i]) == name then
 			tremove(AffinityBuffs,i);
 			self:AffinityUpdate()
@@ -274,14 +273,20 @@ end
 function BigWigsAffinity:AffinityUpdate()
 	if not anchor then self:SetupFrames() anchor:Show() end
 	local numEntries = getn(AffinityBuffs)
-	for i=1,10 do
-		if i<=getn(AffinityBuffs) and AffinityBuffs[i] then
-			anchor.bar[i].unit=AffinityBuffs[i];
-			anchor.bar[i].text:SetText(UnitName(AffinityBuffs[i]))
-			anchor.bar[i].textVal:SetText(UnitClass(AffinityBuffs[i]))
+	local barCount = 1
+	for i=1,numEntries do
+		if AffinityBuffs[i] then
+			anchor.bar[barCount].unit=AffinityBuffs[i];
+			anchor.bar[barCount].text:SetText(UnitName(AffinityBuffs[i]))
+			anchor.bar[barCount].textVal:SetText(UnitClass(AffinityBuffs[i]))
 			--anchor.bar[i].status:SetScript("OnUpdate", self.OnUpdate)
-			anchor.bar[i]:Show()
-		else
+			anchor.bar[barCount]:Show()
+			barCount = barCount + 1
+			if barCount > 10 then break end;
+		end
+	end
+	if barCount < 10 then
+		for i=barCount, 10 do
 			anchor.bar[i].text:SetText("")
 			anchor.bar[i].textVal:SetText("")
 			anchor.bar[i]:Hide()
